@@ -97,9 +97,6 @@ Java_com_withyang_rgbplayer_RGBPlayerView_open(JNIEnv *env, jobject thiz, jstrin
         int re = av_read_frame(avFormatContext, pkt);
         if (re != 0) {
             LOGE("读取到结尾处！");
-            int pos = 10 * r2d(avFormatContext->streams[videoStreamIndex]->time_base);
-            av_seek_frame(avFormatContext, videoStreamIndex, pos,
-                          AVSEEK_FLAG_BACKWARD | AVSEEK_FLAG_FRAME);
             break;
         }
 
@@ -113,7 +110,7 @@ Java_com_withyang_rgbplayer_RGBPlayerView_open(JNIEnv *env, jobject thiz, jstrin
         av_packet_unref(pkt);
 
         if (re != 0) {
-            LOGE("avcodec_send_packet failed!");
+            LOGE("avcodec_send_packet failed: %s", av_err2str(result));
             continue;
         }
 
