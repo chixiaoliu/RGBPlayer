@@ -16,6 +16,12 @@
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
+    <Button
+        android:id="@+id/play_pcm"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="play_pcm"
+      android:layout_alignParentRight="true"/>
 
     <com.withyang.rgbplayer.RGBPlayerView
         android:id="@+id/rgb_play"

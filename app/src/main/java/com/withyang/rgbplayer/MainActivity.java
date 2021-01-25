@@ -34,23 +34,16 @@ public class MainActivity extends AppCompatActivity {
         play.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                        rgb_play.play();
+                rgb_play.play();
 
             }
         });
+
 
         int result = PermissionChecker.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE);
         if (result == -1) {
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1000);
         }
-        rgb_play.post(new Runnable() {
-            @Override
-            public void run() {
-                int width = rgb_play.getWidth();
-                int height = rgb_play.getHeight();
-                Log.e("Main",width+"height"+height);
-            }
-        });
     }
 
     /**

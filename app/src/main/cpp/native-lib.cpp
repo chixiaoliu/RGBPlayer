@@ -23,7 +23,7 @@ extern "C" JNIEXPORT jstring JNICALL
 Java_com_withyang_rgbplayer_MainActivity_stringFromJNI(
         JNIEnv *env,
         jobject /* this */) {
-    std::string hello = "Play";
+    std::string hello = "PlayRGB";
     return env->NewStringUTF(hello.c_str());
 }
 extern "C"
@@ -171,4 +171,9 @@ Java_com_withyang_rgbplayer_RGBPlayerView_open(JNIEnv *env, jobject thiz, jstrin
     //关闭上下文
     avformat_close_input(&avFormatContext);
     env->ReleaseStringUTFChars(url, path);
+}extern "C"
+JNIEXPORT void JNICALL
+Java_com_withyang_rgbplayer_MainActivity_palyPcm(JNIEnv *env, jobject thiz) {
+
+
 }
