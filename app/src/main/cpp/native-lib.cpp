@@ -3,8 +3,12 @@
 #include <android/log.h>
 #include <android/native_window.h>
 #include <android/native_window_jni.h>
+#include <SLES/OpenSLES.h>
+#include <SLES/OpenSLES_Android.h>
 
 #define  LOGE(...) __android_log_print(ANDROID_LOG_ERROR, "FFmpeg",__VA_ARGS__)
+
+SLEngineItf createSLEngin();
 
 extern "C"
 {
@@ -26,6 +30,11 @@ Java_com_withyang_rgbplayer_MainActivity_stringFromJNI(
     std::string hello = "PlayRGB";
     return env->NewStringUTF(hello.c_str());
 }
+
+SLEngineItf createSLEngine() {
+    return nullptr;
+}
+
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_withyang_rgbplayer_RGBPlayerView_open(JNIEnv *env, jobject thiz, jstring url,
@@ -124,40 +133,38 @@ Java_com_withyang_rgbplayer_RGBPlayerView_open(JNIEnv *env, jobject thiz, jstrin
             LOGE("avcodec_receive_frame %lld", frame->pts);
 
             //如果是视频帧
-            if(cc == vc){
+            if (cc == vc) {
                 //3 初始化像素格式转换的上下文
                 vctx = sws_getCachedContext(vctx,
                                             frame->width,
                                             frame->height,
-                                            (AVPixelFormat)frame->format,
+                                            (AVPixelFormat) frame->format,
                                             outwWidth,
                                             outHeight,
                                             AV_PIX_FMT_RGBA,
                                             SWS_FAST_BILINEAR,
-                                            0,0,0);
+                                            0, 0, 0);
 
-                if(!vctx){
+                if (!vctx) {
                     LOGE("sws_getCachedContext failed!");
-                }else
-                {
-                    uint8_t  *data[AV_NUM_DATA_POINTERS] = {0};
-                    data[0] = (uint8_t *)rgb;
+                } else {
+                    uint8_t *data[AV_NUM_DATA_POINTERS] = {0};
+                    data[0] = (uint8_t *) rgb;
                     int lines[AV_NUM_DATA_POINTERS] = {0};
                     lines[0] = outwWidth * 4;
                     int h = sws_scale(vctx,
-                                      (const uint8_t **)frame->data,
+                                      (const uint8_t **) frame->data,
                                       frame->linesize,
                                       0,
                                       frame->height,
                                       data,
                                       lines);
-                    LOGE("sws_scale = %d",h);
+                    LOGE("sws_scale = %d", h);
 
-                    if(h > 0)
-                    {
-                        ANativeWindow_lock(nwin,&wbuf,0);
-                        uint8_t  *dst = (uint8_t*)wbuf.bits;
-                        memcpy(dst, rgb, outwWidth*outHeight*4);
+                    if (h > 0) {
+                        ANativeWindow_lock(nwin, &wbuf, 0);
+                        uint8_t *dst = (uint8_t *) wbuf.bits;
+                        memcpy(dst, rgb, outwWidth * outHeight * 4);
                         ANativeWindow_unlockAndPost(nwin);
                     }
                 }
@@ -176,4 +183,29 @@ JNIEXPORT void JNICALL
 Java_com_withyang_rgbplayer_MainActivity_palyPcm(JNIEnv *env, jobject thiz) {
 
 
+}extern "C"
+JNIEXPORT void JNICALL
+Java_com_withyang_rgbplayer_MainActivity_playPCM(JNIEnv *env, jobject thiz, jstring url) {
+    // TODO: implement playPCM()
+    SLEngineItf slEngineItf = createSLEngine();
+    if (slEngineItf) {
+        LOGE("slEngineItf success");
+    } else {
+        LOGE("slEngineItf failed");
+    }
+    SLObjectItf mix = NULL;
+    SLresult result = 0;
+    result = (*slEngineItf)->CreateOutputMix(slEngineItf, &mix, 0, 0, 0);
+    if (result != SL_RESULT_SUCCESS) {
+        LOGE("CreateOutputMix failed!");
+    }
+
+    result = (*mix)->Realize(mix, SL_BOOLEAN_FALSE);
+    if (result != SL_RESULT_SUCCESS) {
+        LOGE("Realize failed!");
+    }
+
+    SLDataLocator_OutputMix outputMix = {SL_DATALOCATOR_OUTPUTMIX, mix};
+
+    SLDataSink slDataSink = {&outputMix, 0};
 }

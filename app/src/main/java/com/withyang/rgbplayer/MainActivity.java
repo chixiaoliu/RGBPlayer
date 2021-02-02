@@ -30,6 +30,12 @@ public class MainActivity extends AppCompatActivity {
         // Example of a call to a native method
         Button play = findViewById(R.id.sample_text);
         rgb_play = findViewById(R.id.rgb_play);
+        findViewById(R.id.play_pcm).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                playPCM("");
+            }
+        });
         play.setText(stringFromJNI());
         play.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -51,4 +57,5 @@ public class MainActivity extends AppCompatActivity {
      * which is packaged with this application.
      */
     public native String stringFromJNI();
+    public native void playPCM(String url);
 }
