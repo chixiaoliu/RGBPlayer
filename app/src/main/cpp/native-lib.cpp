@@ -18,7 +18,60 @@ extern "C"
 #include <libswscale/swscale.h>
 #include <libswresample/swresample.h>
 }
+static SLObjectItf engineSL = NULL;
+static SLEngineItf  createSLEngine()
+{
+    SLresult re;
+    SLEngineItf en;
 
+    //1 创建 SLObjectItf
+    re = slCreateEngine(&engineSL, 0, 0, 0, 0, 0);
+    if(re != SL_RESULT_SUCCESS)
+    {
+        return NULL;
+    }
+
+    //2 实现 SLObjectItf
+    re = (*engineSL)->Realize(engineSL, SL_BOOLEAN_FALSE);
+    if(re != SL_RESULT_SUCCESS){
+        return NULL;
+    }
+
+    //3 获取SLEngineItf对象
+    re = (*engineSL)->GetInterface(engineSL, SL_IID_ENGINE, &en);
+    if(re != SL_RESULT_SUCCESS){
+        return NULL;
+    }
+
+    return en;
+}
+void pcmcall(SLAndroidSimpleBufferQueueItf bf,void *context) {
+    static FILE *fp = NULL;
+    static char *buf = NULL;
+
+    if(!buf)
+    {
+        buf = new char[1024 * 1024];
+    }
+
+    if(!fp)
+    {
+        fp = fopen("/sdcard/storage/emulated/0/test.aac", "rb");
+    }
+
+    if(!fp){
+        return;
+    }
+
+    if(feof(fp) == 0){//如果未读到文件末尾
+        //每次读取1024个字节
+        int len = fread(buf, 1, 1024, fp);
+        if(len > 0){
+            //添加到队列
+            (*bf)->Enqueue(bf, buf, len);
+        }
+    }
+}
 int r2d(AVRational r) {
     return r.num == 0 || r.den == 0 ? (double) 0 : r.num / (double) r.den;
 }
@@ -29,10 +82,6 @@ Java_com_withyang_rgbplayer_MainActivity_stringFromJNI(
         jobject /* this */) {
     std::string hello = "PlayRGB";
     return env->NewStringUTF(hello.c_str());
-}
-
-SLEngineItf createSLEngine() {
-    return nullptr;
 }
 
 extern "C"
@@ -208,4 +257,47 @@ Java_com_withyang_rgbplayer_MainActivity_playPCM(JNIEnv *env, jobject thiz, jstr
     SLDataLocator_OutputMix outputMix = {SL_DATALOCATOR_OUTPUTMIX, mix};
 
     SLDataSink slDataSink = {&outputMix, 0};
+
+    SLDataLocator_AndroidSimpleBufferQueue queue = {SL_DATALOCATOR_ANDROIDSIMPLEBUFFERQUEUE, 10};
+    SLDataFormat_PCM pcm = {SL_DATAFORMAT_PCM,
+                            2,
+                            SL_SAMPLINGRATE_44_1,
+                            SL_PCMSAMPLEFORMAT_FIXED_16,
+                            SL_PCMSAMPLEFORMAT_FIXED_16,
+                            SL_SPEAKER_FRONT_LEFT | SL_SPEAKER_FRONT_RIGHT,
+                            SL_BYTEORDER_LITTLEENDIAN};
+    SLDataSource dataSource = {&queue, &pcm};
+    SLObjectItf palyer = NULL;
+    SLPlayItf iplayer = NULL;
+    SLAndroidSimpleBufferQueueItf simpleBufferQueueItf = NULL;
+    const SLInterfaceID ids[] = {SL_IID_BUFFERQUEUE};
+    const SLboolean req[] = {SL_BOOLEAN_TRUE};
+    result = (*slEngineItf)->CreateAudioPlayer(slEngineItf, &palyer, &dataSource, &slDataSink,
+                                               sizeof(ids) / sizeof(SLInterfaceID), ids, req);
+    if (result != SL_RESULT_SUCCESS) {
+        LOGE("CreateAudioPlayer failed!");
+    } else {
+
+    }
+
+    (*palyer)->Realize(palyer, SL_BOOLEAN_FALSE);
+    result = (*palyer)->GetInterface(palyer, SL_IID_PLAY, &iplayer);
+    if (result != SL_RESULT_SUCCESS) {
+        LOGE("GetInterface failed!");
+    } else {
+
+    }
+    result = (*palyer)->GetInterface(palyer, SL_IID_BUFFERQUEUE, &simpleBufferQueueItf);
+    if(result != SL_RESULT_SUCCESS)
+    {
+        LOGE("GetInterface SL_IID_BUFFERQUEUE failed");
+    }
+    (*simpleBufferQueueItf)->RegisterCallback(simpleBufferQueueItf, pcmcall, 0);
+    (*iplayer)->SetPlayState(iplayer, SL_PLAYSTATE_PLAYING);
+    (*simpleBufferQueueItf)->Enqueue(simpleBufferQueueItf, "", 1);
+
 }
+
+
+
+
